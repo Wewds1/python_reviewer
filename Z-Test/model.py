@@ -5,7 +5,7 @@ from typing import Optional, Set
 
 
 @dataclass(frozen=True)
-class Orderline:
+class OrderLine:
     orderid: str
     sku: str
     qty: int
@@ -17,17 +17,18 @@ class Batch:
         self.sku = sku
         self._purchased_quantity = qty
         self.eta = eta
-        self._allocations: Set[Orderline] = set()
+        self._allocations: Set[OrderLine] = set()
 
 
-    def allocate(self, line: Orderline):
-        self.available_quantity -= line.qty
+    def allocate(self, line: OrderLine):
+        if self.can_allocate(line):
+            self._allocations.add(line)
         
         
-    def can_allocate(self, line: Orderline) -> bool:
+    def can_allocate(self, line: OrderLine) -> bool:
         return self.sku == line.sku and self.available_quantity >= line.qty
     
-    def deallocate(self, line: Orderline):
+    def deallocate(self, line: OrderLine):
         if line in self._allocations:
             self._allocations.remove(line)
             

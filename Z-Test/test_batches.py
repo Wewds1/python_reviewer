@@ -1,4 +1,9 @@
-from .model import Batch, OrderLine
+from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parent))
+
+from model import Batch, OrderLine
 
 def test_allocating_to_a_batch_reduces_the_available_quantity():
     batch = Batch("batch-001", "SMALL-TABLE", 20, eta=None)
