@@ -1,5 +1,9 @@
 # Coding Challenges - Module 1 (Intermediate)
-# Written by a Junior Engineer
+# Written by a Senior Engineer (Refactored)
+
+import re
+import heapq
+from collections import Counter
 
 # 1. Given a list of dictionaries representing students (name and grade), return the name of the student with the highest grade.
 def get_top_student(students):
@@ -22,57 +26,34 @@ def flatten_list(nested_list):
 
 # 3. Given a sentence, return the frequency of each word as a dictionary, ignoring punctuation and case.
 def word_frequency(sentence):
-    # remove punctuation manually
-    punctuation = ".,!?;:()\"'"
-    clean_sentence = ""
-    for char in sentence:
-        if char not in punctuation:
-            clean_sentence = clean_sentence + char
-
-    words = clean_sentence.lower().split()
-    freq = {}
-    for w in words:
-        if w in freq:
-            freq[w] = freq[w] + 1
-        else:
-            freq[w] = 1
-    return freq
+    if not sentence:
+        return {}
+    # Use regex to find all alphanumeric sequences, ignoring punctuation and case
+    words = re.findall(r'\w+', sentence.lower())
+    return dict(Counter(words))
 
 # 4. Write a function that checks whether two strings are anagrams of each other.
 def are_anagrams(s1, s2):
-    s1 = s1.lower().replace(" ", "")
-    s2 = s2.lower().replace(" ", "")
-
-    if len(s1) != len(s2):
+    if s1 is None or s2 is None:
         return False
+    # Normalize by removing non-alphanumeric characters and converting to lowercase
+    clean_s1 = filter(str.isalnum, s1.lower())
+    clean_s2 = filter(str.isalnum, s2.lower())
 
-    # create frequency maps
-    count1 = {}
-    for char in s1:
-        count1[char] = count1.get(char, 0) + 1
-
-    count2 = {}
-    for char in s2:
-        count2[char] = count2.get(char, 0) + 1
-
-    return count1 == count2
+    return Counter(clean_s1) == Counter(clean_s2)
 
 # 5. Given a list of numbers, return the second largest value without sorting the whole list.
 def second_largest(numbers):
-    if len(numbers) < 2:
+    if not numbers or len(numbers) < 2:
         return None
 
-    first = -float('inf')
-    second = -float('inf')
+    # Remove duplicates using a set to ensure we get the second UNIQUE largest
+    unique_numbers = set(numbers)
+    if len(unique_numbers) < 2:
+        return None
 
-    for n in numbers:
-        if n > first:
-            second = first
-            first = n
-        elif n > second and n != first:
-            second = n
-
-    return second if second != -float('inf') else None
+    # Use heapq.nlargest for O(n log k) efficiency (k=2 here, so effectively O(n))
+    return heapq.nlargest(2, unique_numbers)[-1]
 
 # 6. Write a function that groups a list of words by their first letter, returning a dictionary of lists.
 def group_by_first_letter(words):
@@ -109,24 +90,20 @@ def remove_duplicate_dicts(data_list, key):
 
 # 9. Implement a basic Caesar cipher that shifts each letter of a string by a given number of positions.
 def caesar_cipher(text, shift):
-    result = ""
-    for char in text:
-        if char.isalpha():
-            # handle uppercase
-            if char.isupper():
-                start = ord('A')
-                # shift and wrap around
-                new_char = chr((ord(char) - start + shift) % 26 + start)
-                result = result + new_char
-            # handle lowercase
-            else:
-                start = ord('a')
-                new_char = chr((ord(char) - start + shift) % 26 + start)
-                result = result + new_char
-        else:
-            # non-letters stay the same
-            result = result + char
-    return result
+    if text is None:
+        return None
+
+    shift %= 26
+    lower = "abcdefghijklmnopqrstuvwxyz"
+    upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+    # Pre-compute the shifted alphabets
+    shifted_lower = lower[shift:] + lower[:shift]
+    shifted_upper = upper[shift:] + upper[:shift]
+
+    # Create a translation table for O(n) mapping
+    table = str.maketrans(lower + upper, shifted_lower + shifted_upper)
+    return text.translate(table)
 
 # 10. Given a list of tuples representing coordinates, return the one closest to the origin.
 def closest_to_origin(coords):
@@ -153,50 +130,27 @@ def merge_dicts(d1, d2):
 
 # 12. Given a paragraph of text, return the three most common words, excluding a provided list of stop words.
 def top_three_words(text, stop_words):
-    words = text.lower().split()
-    freq = {}
-    for w in words:
-        if w not in stop_words:
-            freq[w] = freq.get(w, 0) + 1
+    if not text:
+        return []
 
-    # sort dictionary by values (the counts)
-    # manually convert to list of tuples to sort
-    items = list(freq.items())
-    # bubble sort for junior feel
-    for i in range(len(items)):
-        for j in range(0, len(items) - i - 1):
-            if items[j][1] < items[j+1][1]:
-                items[j], items[j+1] = items[j+1], items[j]
+    # Convert stop_words to a set for O(1) lookup
+    stop_set = set(stop_words) if stop_words else set()
 
-    # take top 3 names
-    result = []
-    for i in range(min(3, len(items))):
-        result.append(items[i][0])
-    return result
+    # Tokenize and filter in one list comprehension
+    words = [w for w in re.findall(r'\w+', text.lower()) if w not in stop_set]
+
+    # most_common(3) uses a heap internally, avoiding a full sort
+    return [word for word, count in Counter(words).most_common(3)]
 
 # 13. Write a function that validates whether a string is a properly formatted email address, using basic checks rather than a regular expression.
 def is_valid_email(email):
-    # must have one @
-    if email.count("@") != 1:
+    if not email:
         return False
 
-    parts = email.split("@")
-    user = parts[0]
-    domain = parts[1]
-
-    # user and domain cannot be empty
-    if len(user) == 0 or len(domain) == 0:
-        return False
-
-    # domain must have at least one dot
-    if "." not in domain:
-        return False
-
-    # domain cannot start or end with dot
-    if domain[0] == "." or domain[-1] == ".":
-        return False
-
-    return True
+    # Professional standard: Use a regex for declarative validation
+    # This pattern checks for: basic user @ domain . extension
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    return bool(re.match(email_regex, email))
 
 # 14. Given a list of numbers, return True if the list is sorted in ascending order, False otherwise.
 def is_sorted(numbers):
@@ -246,28 +200,17 @@ def fibonacci_loop(n):
 
 # 18. Given two lists representing set A and set B, return their union, intersection, and difference without using Python's built-in set operators directly (use loops).
 def list_set_operations(list_a, list_b):
-    # Union
-    union = []
-    for item in list_a:
-        if item not in union:
-            union.append(item)
-    for item in list_b:
-        if item not in union:
-            union.append(item)
+    if list_a is None or list_b is None:
+        return {"union": [], "intersection": [], "difference": []}
 
-    # Intersection
-    intersection = []
-    for item in list_a:
-        if item in list_b and item not in intersection:
-            intersection.append(item)
+    # Convert to sets for hash-based operations
+    set_a, set_b = set(list_a), set(list_b)
 
-    # Difference (A - B)
-    difference = []
-    for item in list_a:
-        if item not in list_b and item not in difference:
-            difference.append(item)
-
-    return {"union": union, "intersection": intersection, "difference": difference}
+    return {
+        "union": list(set_a | set_b),
+        "intersection": list(set_a & set_b),
+        "difference": list(set_a - set_b)
+    }
 
 # 19. Write a function that takes a list of prices and a discount percentage, and returns the discounted prices rounded to two decimals.
 def apply_discount(prices, discount_percent):
